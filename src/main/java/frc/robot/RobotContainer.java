@@ -14,8 +14,12 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.generated.TunerConstants;
+import frc.robot.subsystems.DrivebaseSubsystem;
+import frc.robot.subsystems.ShooterSubsystem;
 
 public class RobotContainer {
   private double MaxSpeed = 2; // 6 meters per second desired top speed
@@ -23,8 +27,8 @@ public class RobotContainer {
 
   /* Setting up bindings for necessary control of the swerve drive platform */
   private final CommandXboxController joystick = new CommandXboxController(0); // My joystick
-  public final CommandSwerveDrivetrain drivetrain = TunerConstants.DriveTrain; // My drivetrain
-
+  public final DrivebaseSubsystem drivetrain = TunerConstants.DriveTrain; // My drivetrain
+  public final ShooterSubsystem shooter = new ShooterSubsystem();
   private final SwerveRequest.FieldCentric drive = new SwerveRequest.FieldCentric()
       .withDeadband(MaxSpeed * 0.1).withRotationalDeadband(MaxAngularRate * 0.1) // Add a 10% deadband
       .withDriveRequestType(DriveRequestType.OpenLoopVoltage); // I want field-centric
@@ -54,15 +58,18 @@ public class RobotContainer {
     // reset the field-centric heading on left bumper press
     joystick.leftBumper().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldRelative()));
 
-    joystick.y().onTrue(new InstantCommand(new Runnable() {
+    joystick.rightBumper().onTrue(new InstantCommand(() -> orchestra.play()));
+    joystick.y().onTrue( new SequentialCommandGroup(
+      new InstantCommand(() -> shooter.startFlywheel()),
+      new WaitCommand(0.5),
+      new InstantCommand(() -> shooter.feedNote()),
+      new WaitCommand(1),
+      new InstantCommand(() -> shooter.stopMotors())
+    ));
 
-      @Override
-      public void run() {
-        System.out.println("Y button");
-        orchestra.play();
-      }
-      
-    }));
+    joystick.x().onTrue(new InstantCommand(() -> shooter.loadNote()));
+    joystick.x().onFalse(new InstantCommand(() -> shooter.stopMotors()));
+  
     // if (Utils.isSimulation()) {
     //   drivetrain.seedFieldRelative(new Pose2d(new Translation2d(), Rotation2d.fromDegrees(90)));
     // }

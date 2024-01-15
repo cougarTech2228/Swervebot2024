@@ -8,7 +8,7 @@ import com.ctre.phoenix6.mechanisms.swerve.SwerveModule.ClosedLoopOutputType;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModuleConstants.SteerFeedbackType;
 
 import edu.wpi.first.math.util.Units;
-import frc.robot.CommandSwerveDrivetrain;
+import frc.robot.subsystems.DrivebaseSubsystem;
 
 public class TunerConstants {
     // Both sets of gains need to be tuned to your individual robot.
@@ -116,6 +116,10 @@ public class TunerConstants {
     private static final double kBackRightXPosInches = -10.5;
     private static final double kBackRightYPosInches = -10.5;
 
+    // Shooter
+    public static final int kShooterFeedMotorId = 21;
+    public static final int kShooterFlywheelMotorId = 20;
+
 
     private static final SwerveModuleConstants FrontLeft = ConstantCreator.createModuleConstants(
             kFrontLeftSteerMotorId, kFrontLeftDriveMotorId, kFrontLeftEncoderId, kFrontLeftEncoderOffset, Units.inchesToMeters(kFrontLeftXPosInches), Units.inchesToMeters(kFrontLeftYPosInches), kInvertLeftSide);
@@ -126,6 +130,6 @@ public class TunerConstants {
     private static final SwerveModuleConstants BackRight = ConstantCreator.createModuleConstants(
             kBackRightSteerMotorId, kBackRightDriveMotorId, kBackRightEncoderId, kBackRightEncoderOffset, Units.inchesToMeters(kBackRightXPosInches), Units.inchesToMeters(kBackRightYPosInches), kInvertRightSide);
 
-    public static final CommandSwerveDrivetrain DriveTrain = new CommandSwerveDrivetrain(DrivetrainConstants, 250, FrontLeft,
+    public static final DrivebaseSubsystem DriveTrain = new DrivebaseSubsystem(DrivetrainConstants, 250, FrontLeft,
             FrontRight, BackLeft, BackRight);
 }
