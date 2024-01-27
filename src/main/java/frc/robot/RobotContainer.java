@@ -7,17 +7,20 @@ package frc.robot;
 import com.ctre.phoenix6.Orchestra;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveRequest;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModule.DriveRequestType;
-import com.ctre.phoenix6.mechanisms.swerve.SwerveModule.SteerRequestType;
+import com.pathplanner.lib.auto.NamedCommands;
+import com.pathplanner.lib.commands.PathPlannerAuto;
 
-import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.PrintCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import frc.robot.commands.ShootSpeakerCommand;
 import frc.robot.generated.TunerConstants;
+import frc.robot.subsystems.AprilTagSubsystem;
 import frc.robot.subsystems.DrivebaseSubsystem;
 import frc.robot.subsystems.ShooterSubsystem;
 
@@ -29,6 +32,7 @@ public class RobotContainer {
   private final CommandXboxController joystick = new CommandXboxController(0); // My joystick
   public final DrivebaseSubsystem drivetrain = TunerConstants.DriveTrain; // My drivetrain
   public final ShooterSubsystem shooter = new ShooterSubsystem();
+  public final AprilTagSubsystem aprilTagSubsystem = new AprilTagSubsystem();
   private final SwerveRequest.FieldCentric drive = new SwerveRequest.FieldCentric()
       .withDeadband(MaxSpeed * 0.1).withRotationalDeadband(MaxAngularRate * 0.1) // Add a 10% deadband
       .withDriveRequestType(DriveRequestType.OpenLoopVoltage); // I want field-centric
@@ -39,9 +43,21 @@ public class RobotContainer {
 
   Orchestra orchestra = new Orchestra();
   /* Path follower */
-  // Command runAuto = drivetrain.getAutoPath("Tests");
-
+  PathPlannerAuto runAuto;
+  // Command shootCommand = new ShootSpeakerCommand(shooter);
   private final Telemetry logger = new Telemetry(MaxSpeed);
+
+  Command shootCommand = new SequentialCommandGroup(
+      new InstantCommand(() -> shooter.startFlywheel()),
+      new WaitCommand(1),
+      new InstantCommand(() -> shooter.feedNote()),
+      new WaitCommand(1),
+      new InstantCommand(() -> shooter.stopMotors())
+    );
+  Command loadNote = new SequentialCommandGroup(
+      new InstantCommand(() -> shooter.loadNote()),
+      new WaitCommand(1)
+    );
 
   private void configureBindings() {
     drivetrain.setDefaultCommand( // Drivetrain will execute this command periodically
@@ -58,14 +74,8 @@ public class RobotContainer {
     // reset the field-centric heading on left bumper press
     joystick.leftBumper().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldRelative()));
 
-    joystick.rightBumper().onTrue(new InstantCommand(() -> orchestra.play()));
-    joystick.y().onTrue( new SequentialCommandGroup(
-      new InstantCommand(() -> shooter.startFlywheel()),
-      new WaitCommand(0.5),
-      new InstantCommand(() -> shooter.feedNote()),
-      new WaitCommand(1),
-      new InstantCommand(() -> shooter.stopMotors())
-    ));
+    // joystick.rightBumper().onTrue(new InstantCommand(() -> orchestra.play()));
+    joystick.y().onTrue(shootCommand);
 
     joystick.x().onTrue(new InstantCommand(() -> shooter.loadNote()));
     joystick.x().onFalse(new InstantCommand(() -> shooter.stopMotors()));
@@ -80,6 +90,11 @@ public class RobotContainer {
   }
 
   public RobotContainer() {
+    NamedCommands.registerCommand("shootSpeaker", shootCommand);
+    NamedCommands.registerCommand("loadNote", loadNote);
+    
+    runAuto = drivetrain.getAutoPath("Speaker2Auto");
+
     configureBindings();
     
     orchestra.addInstrument(TunerConstants.DriveTrain.getModule(0).getDriveMotor());
@@ -91,10 +106,13 @@ public class RobotContainer {
     orchestra.addInstrument(TunerConstants.DriveTrain.getModule(3).getDriveMotor());
     orchestra.addInstrument(TunerConstants.DriveTrain.getModule(3).getSteerMotor());
     orchestra.loadMusic("test.chrp");
+
   }
 
   public Command getAutonomousCommand() {
     /* First put the drivetrain into auto run mode, then run the auto */
-    return Commands.runOnce(() -> {});
+    System.out.println("has command: " + NamedCommands.hasCommand("shootSpeaker"));
+    
+    return runAuto;
   }
 }
