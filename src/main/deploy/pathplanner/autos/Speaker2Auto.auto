@@ -5,7 +5,7 @@
       "x": 1.35,
       "y": 5.61
     },
-    "rotation": 0.0
+    "rotation": 0
   },
   "command": {
     "type": "sequential",
@@ -31,6 +31,37 @@
                 "type": "path",
                 "data": {
                   "pathName": "Note1toSpeaker"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "loadNote"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "shootSpeaker"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "SpeakerToNote2"
+          }
+        },
+        {
+          "type": "parallel",
+          "data": {
+            "commands": [
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "Note2toSpeaker"
                 }
               },
               {

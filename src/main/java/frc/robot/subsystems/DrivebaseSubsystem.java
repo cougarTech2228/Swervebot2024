@@ -3,6 +3,7 @@ package frc.robot.subsystems;
 import java.util.function.Supplier;
 
 import com.ctre.phoenix6.Utils;
+import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveDrivetrain;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveDrivetrainConstants;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModuleConstants;
@@ -31,19 +32,25 @@ public class DrivebaseSubsystem extends SwerveDrivetrain implements Subsystem {
 
     private final SwerveRequest.ApplyChassisSpeeds autoRequest = new SwerveRequest.ApplyChassisSpeeds();
 
-    public DrivebaseSubsystem(SwerveDrivetrainConstants driveTrainConstants, double OdometryUpdateFrequency, SwerveModuleConstants... modules) {
-        super(driveTrainConstants, OdometryUpdateFrequency, modules);
-        configurePathPlanner();
-        if (Utils.isSimulation()) {
-            startSimThread();
-        }
-    }
     public DrivebaseSubsystem(SwerveDrivetrainConstants driveTrainConstants, SwerveModuleConstants... modules) {
         super(driveTrainConstants, modules);
         configurePathPlanner();
         if (Utils.isSimulation()) {
             startSimThread();
         }
+
+        // Apply current limits to the motors to smooth out the accelleration and
+        // braking
+        CurrentLimitsConfigs limits = new CurrentLimitsConfigs()
+            .withStatorCurrentLimit(20)
+            .withStatorCurrentLimitEnable(true);
+  
+        // apply the limits to all 4 drive motors
+        getModule(0).getDriveMotor().getConfigurator().apply(limits);
+        getModule(1).getDriveMotor().getConfigurator().apply(limits);
+        getModule(2).getDriveMotor().getConfigurator().apply(limits);
+        getModule(3).getDriveMotor().getConfigurator().apply(limits);
+
     }
 
     private void configurePathPlanner() {
@@ -95,4 +102,5 @@ public class DrivebaseSubsystem extends SwerveDrivetrain implements Subsystem {
         });
         m_simNotifier.startPeriodic(kSimLoopPeriod);
     }
+
 }

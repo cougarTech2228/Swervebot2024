@@ -32,7 +32,7 @@ public class RobotContainer {
   private final CommandXboxController joystick = new CommandXboxController(0); // My joystick
   public final DrivebaseSubsystem drivetrain = TunerConstants.DriveTrain; // My drivetrain
   public final ShooterSubsystem shooter = new ShooterSubsystem();
-  public final AprilTagSubsystem aprilTagSubsystem = new AprilTagSubsystem();
+  public final AprilTagSubsystem aprilTagSubsystem = new AprilTagSubsystem(drivetrain);
   private final SwerveRequest.FieldCentric drive = new SwerveRequest.FieldCentric()
       .withDeadband(MaxSpeed * 0.1).withRotationalDeadband(MaxAngularRate * 0.1) // Add a 10% deadband
       .withDriveRequestType(DriveRequestType.OpenLoopVoltage); // I want field-centric
@@ -97,15 +97,15 @@ public class RobotContainer {
 
     configureBindings();
     
-    orchestra.addInstrument(TunerConstants.DriveTrain.getModule(0).getDriveMotor());
-    orchestra.addInstrument(TunerConstants.DriveTrain.getModule(0).getSteerMotor());
-    orchestra.addInstrument(TunerConstants.DriveTrain.getModule(1).getDriveMotor());
-    orchestra.addInstrument(TunerConstants.DriveTrain.getModule(1).getSteerMotor());
-    orchestra.addInstrument(TunerConstants.DriveTrain.getModule(2).getDriveMotor());
-    orchestra.addInstrument(TunerConstants.DriveTrain.getModule(2).getSteerMotor());
-    orchestra.addInstrument(TunerConstants.DriveTrain.getModule(3).getDriveMotor());
-    orchestra.addInstrument(TunerConstants.DriveTrain.getModule(3).getSteerMotor());
-    orchestra.loadMusic("test.chrp");
+    // orchestra.addInstrument(TunerConstants.DriveTrain.getModule(0).getDriveMotor());
+    // orchestra.addInstrument(TunerConstants.DriveTrain.getModule(0).getSteerMotor());
+    // orchestra.addInstrument(TunerConstants.DriveTrain.getModule(1).getDriveMotor());
+    // orchestra.addInstrument(TunerConstants.DriveTrain.getModule(1).getSteerMotor());
+    // orchestra.addInstrument(TunerConstants.DriveTrain.getModule(2).getDriveMotor());
+    // orchestra.addInstrument(TunerConstants.DriveTrain.getModule(2).getSteerMotor());
+    // orchestra.addInstrument(TunerConstants.DriveTrain.getModule(3).getDriveMotor());
+    // orchestra.addInstrument(TunerConstants.DriveTrain.getModule(3).getSteerMotor());
+    // orchestra.loadMusic("test.chrp");
 
   }
 
