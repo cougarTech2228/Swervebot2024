@@ -4,28 +4,26 @@
 
 package frc.robot;
 
-import com.ctre.phoenix6.Orchestra;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveRequest;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModule.DriveRequestType;
+import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
-import com.pathplanner.lib.commands.PathPlannerAuto;
 
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.PrintCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
-import frc.robot.commands.ShootSpeakerCommand;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.AprilTagSubsystem;
 import frc.robot.subsystems.DrivebaseSubsystem;
 import frc.robot.subsystems.ShooterSubsystem;
 
 public class RobotContainer {
-  private double MaxSpeed = 2; // 6 meters per second desired top speed
+  private double MaxSpeed = 4; // 6 meters per second desired top speed
   private double MaxAngularRate = Math.PI; // Half a rotation per second max angular velocity
 
   /* Setting up bindings for necessary control of the swerve drive platform */
@@ -41,11 +39,9 @@ public class RobotContainer {
   private final SwerveRequest.RobotCentric forwardStraight = new SwerveRequest.RobotCentric().withDriveRequestType(DriveRequestType.OpenLoopVoltage);
   private final SwerveRequest.PointWheelsAt point = new SwerveRequest.PointWheelsAt();
 
-  Orchestra orchestra = new Orchestra();
   /* Path follower */
-  PathPlannerAuto runAuto;
-  // Command shootCommand = new ShootSpeakerCommand(shooter);
   private final Telemetry logger = new Telemetry(MaxSpeed);
+  private final SendableChooser<Command> autoChooser;
 
   Command shootCommand = new SequentialCommandGroup(
       new InstantCommand(() -> shooter.startFlywheel()),
@@ -92,27 +88,13 @@ public class RobotContainer {
   public RobotContainer() {
     NamedCommands.registerCommand("shootSpeaker", shootCommand);
     NamedCommands.registerCommand("loadNote", loadNote);
-    
-    runAuto = drivetrain.getAutoPath("Speaker2Auto");
-
     configureBindings();
     
-    // orchestra.addInstrument(TunerConstants.DriveTrain.getModule(0).getDriveMotor());
-    // orchestra.addInstrument(TunerConstants.DriveTrain.getModule(0).getSteerMotor());
-    // orchestra.addInstrument(TunerConstants.DriveTrain.getModule(1).getDriveMotor());
-    // orchestra.addInstrument(TunerConstants.DriveTrain.getModule(1).getSteerMotor());
-    // orchestra.addInstrument(TunerConstants.DriveTrain.getModule(2).getDriveMotor());
-    // orchestra.addInstrument(TunerConstants.DriveTrain.getModule(2).getSteerMotor());
-    // orchestra.addInstrument(TunerConstants.DriveTrain.getModule(3).getDriveMotor());
-    // orchestra.addInstrument(TunerConstants.DriveTrain.getModule(3).getSteerMotor());
-    // orchestra.loadMusic("test.chrp");
-
+    autoChooser = AutoBuilder.buildAutoChooser(); // Default auto will be `Commands.none()`
+    SmartDashboard.putData("Auto Mode", autoChooser);
   }
 
   public Command getAutonomousCommand() {
-    /* First put the drivetrain into auto run mode, then run the auto */
-    System.out.println("has command: " + NamedCommands.hasCommand("shootSpeaker"));
-    
-    return runAuto;
+    return autoChooser.getSelected();
   }
 }

@@ -1,12 +1,9 @@
 package frc.robot.subsystems;
 
 import java.io.IOException;
-import java.util.Optional;
 
 import org.photonvision.PhotonCamera;
-import org.photonvision.PhotonUtils;
 import org.photonvision.targeting.PhotonPipelineResult;
-import org.photonvision.targeting.PhotonTrackedTarget;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
@@ -25,8 +22,8 @@ public class AprilTagSubsystem extends SubsystemBase {
     DrivebaseSubsystem drivebaseSubsystem;
     AprilTagFieldLayout aprilTagFieldLayout;
 
-    private static final double CAMERA_HEIGHT_METERS = 0.685;
-    private static final double CAMERA_PITCH_RADIANS = Units.degreesToRadians(29);
+    // private static final double CAMERA_HEIGHT_METERS = 0.685;
+    // private static final double CAMERA_PITCH_RADIANS = Units.degreesToRadians(29);
     Transform2d cameraOffsetTransform = new Transform2d(-0.41, 0.0, Rotation2d.fromDegrees(180));
     Transform3d cameraOffsetTransform3d = new Transform3d(-0.03, 0, 0, new Rotation3d(0, 0, Units.degreesToRadians(180)));
 
@@ -50,7 +47,7 @@ public class AprilTagSubsystem extends SubsystemBase {
         PhotonPipelineResult  res = camera.getLatestResult();
         
         if (res.hasTargets()) {
-            PhotonTrackedTarget bestTarget = res.getBestTarget();
+            // PhotonTrackedTarget bestTarget = res.getBestTarget();
             double imageCaptureTime = res.getTimestampSeconds();
             
             
