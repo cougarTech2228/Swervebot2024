@@ -24,7 +24,7 @@ import edu.wpi.first.wpilibj2.command.Subsystem;
 public class DrivebaseSubsystem extends SwerveDrivetrain implements Subsystem {
     private static final double DRIVEBASE_RADIUS_METERS = 0.45085;
     private static final double MODULE_MAX_SPEED = 3.642; // M/s
-    private static final double STATOR_CURRENT_LIMIT = 20.0; // Amps
+    private static final double STATOR_CURRENT_LIMIT = 23.0; // Amps
 
     private final SwerveRequest.ApplyChassisSpeeds autoRequest = new SwerveRequest.ApplyChassisSpeeds();
 

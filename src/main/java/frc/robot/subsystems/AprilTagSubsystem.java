@@ -3,6 +3,7 @@ package frc.robot.subsystems;
 import java.io.IOException;
 
 import org.photonvision.PhotonCamera;
+import org.photonvision.targeting.PNPResult;
 import org.photonvision.targeting.PhotonPipelineResult;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
@@ -14,6 +15,7 @@ import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class AprilTagSubsystem extends SubsystemBase {
@@ -24,8 +26,12 @@ public class AprilTagSubsystem extends SubsystemBase {
 
     // private static final double CAMERA_HEIGHT_METERS = 0.685;
     // private static final double CAMERA_PITCH_RADIANS = Units.degreesToRadians(29);
-    Transform2d cameraOffsetTransform = new Transform2d(-0.41, 0.0, Rotation2d.fromDegrees(180));
-    Transform3d cameraOffsetTransform3d = new Transform3d(-0.03, 0, 0, new Rotation3d(0, 0, Units.degreesToRadians(180)));
+    private static final double reprojectionErrorThresholdLow = 1.8;
+    private static final double reprojectionErrorThresholdHigh = 5.0;
+    Transform2d cameraOffsetTransformRed = new Transform2d(-0.41, 0.0, Rotation2d.fromDegrees(0));
+    // Transform3d cameraOffsetTransform3dRed = new Transform3d(-0.03, 0, 0, new Rotation3d(0, 0, Units.degreesToRadians(0)));
+    Transform2d cameraOffsetTransformBlue = new Transform2d(-0.41, 0.0, Rotation2d.fromDegrees(180));
+    // Transform3d cameraOffsetTransform3dBlue = new Transform3d(-0.03, 0, 0, new Rotation3d(0, 0, Units.degreesToRadians(180)));
 
     public AprilTagSubsystem(DrivebaseSubsystem drivebaseSubsystem){
         this.drivebaseSubsystem = drivebaseSubsystem;
@@ -42,6 +48,35 @@ public class AprilTagSubsystem extends SubsystemBase {
         return result.hasTargets();
     }
 
+    private Transform2d getSideTranslation(){
+        var alliance = DriverStation.getAlliance();
+        if (alliance.isPresent()) {
+            if (alliance.get() == DriverStation.Alliance.Blue) {
+                return cameraOffsetTransformBlue;
+            }
+            if (alliance.get() == DriverStation.Alliance.Red) {
+                return cameraOffsetTransformRed;
+            }
+        }
+        return cameraOffsetTransformBlue;
+    }
+
+    private boolean isSaneMeasurement(PNPResult estimatedPose) {
+        if (estimatedPose.bestReprojErr > reprojectionErrorThresholdLow &&
+            estimatedPose.bestReprojErr < reprojectionErrorThresholdHigh ) {
+            var alliance = DriverStation.getAlliance();
+            if (alliance.isPresent()) {
+                if (alliance.get() == DriverStation.Alliance.Blue) {
+                    return (estimatedPose.best.getX() < 3.0);
+                }
+                if (alliance.get() == DriverStation.Alliance.Red) {
+                    return (estimatedPose.best.getX() > 13.5);
+                }
+            }
+        }
+        return false;
+    }
+
     @Override
     public void periodic() {
         PhotonPipelineResult  res = camera.getLatestResult();
@@ -49,13 +84,21 @@ public class AprilTagSubsystem extends SubsystemBase {
         if (res.hasTargets()) {
             // PhotonTrackedTarget bestTarget = res.getBestTarget();
             double imageCaptureTime = res.getTimestampSeconds();
+            var estimatedPose = res.getMultiTagResult().estimatedPose;
             
-            
-            if (res.getMultiTagResult().estimatedPose.isPresent) {
-                Pose2d estimatedPose = new Pose3d(res.getMultiTagResult().estimatedPose.best.getTranslation(),
-                    res.getMultiTagResult().estimatedPose.best.getRotation()).toPose2d().transformBy(cameraOffsetTransform.inverse());
-                //System.out.println("estimated multitag pose: " + estimatedPose);
-                drivebaseSubsystem.addVisionMeasurement(estimatedPose, imageCaptureTime);
+            if (estimatedPose.isPresent) {
+                
+                
+                // if (++count % 10 == 0){
+                //     System.out.println("error: " + estimatedPose.bestReprojErr);
+                // }
+                if (isSaneMeasurement(estimatedPose)) {
+                    Pose2d adjustedPose = new Pose3d(estimatedPose.best.getTranslation(),
+                        estimatedPose.best.getRotation()).toPose2d().transformBy(getSideTranslation().inverse());
+
+                    drivebaseSubsystem.addVisionMeasurement(adjustedPose, imageCaptureTime);
+                    System.out.println("adding measurement " + adjustedPose + ", error: " + estimatedPose.bestReprojErr);
+                }
             // } else if (bestTarget != null) {
             //     Transform3d camToTargetTrans = bestTarget.getBestCameraToTarget();
             //     //camToTargetTrans.plus( new Transform3d( cameraOffsetTransform.getTranslation(), new Rotation2d());
