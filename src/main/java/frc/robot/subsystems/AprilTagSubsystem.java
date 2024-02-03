@@ -1,6 +1,7 @@
 package frc.robot.subsystems;
 
 import java.io.IOException;
+import java.util.Optional;
 
 import org.photonvision.PhotonCamera;
 import org.photonvision.targeting.PNPResult;
@@ -32,6 +33,9 @@ public class AprilTagSubsystem extends SubsystemBase {
     // Transform3d cameraOffsetTransform3dRed = new Transform3d(-0.03, 0, 0, new Rotation3d(0, 0, Units.degreesToRadians(0)));
     Transform2d cameraOffsetTransformBlue = new Transform2d(-0.41, 0.0, Rotation2d.fromDegrees(180));
     // Transform3d cameraOffsetTransform3dBlue = new Transform3d(-0.03, 0, 0, new Rotation3d(0, 0, Units.degreesToRadians(180)));
+
+    private static final int RED_AMP_TAG_ID = 5;
+    private static final int BLUE_AMP_TAG_ID = 6;
 
     public AprilTagSubsystem(DrivebaseSubsystem drivebaseSubsystem){
         this.drivebaseSubsystem = drivebaseSubsystem;
@@ -97,7 +101,7 @@ public class AprilTagSubsystem extends SubsystemBase {
                         estimatedPose.best.getRotation()).toPose2d().transformBy(getSideTranslation().inverse());
 
                     drivebaseSubsystem.addVisionMeasurement(adjustedPose, imageCaptureTime);
-                    System.out.println("adding measurement " + adjustedPose + ", error: " + estimatedPose.bestReprojErr);
+                    // System.out.println("adding measurement " + adjustedPose + ", error: " + estimatedPose.bestReprojErr);
                 }
             // } else if (bestTarget != null) {
             //     Transform3d camToTargetTrans = bestTarget.getBestCameraToTarget();
@@ -111,5 +115,23 @@ public class AprilTagSubsystem extends SubsystemBase {
             //     }
             }
         }
+    }
+
+    public Pose2d getAmpPose() {
+        int aprilTagID = 0;
+
+        var alliance = DriverStation.getAlliance();
+        if (alliance.isPresent()) {
+            aprilTagID = (alliance.get() == DriverStation.Alliance.Red) ? RED_AMP_TAG_ID : BLUE_AMP_TAG_ID;
+        }
+
+        Optional<Pose3d> tagPose = aprilTagFieldLayout.getTagPose(aprilTagID);
+        if (tagPose.isPresent()) {
+            Pose2d tagPose2d = tagPose.get().toPose2d();
+            tagPose2d = tagPose2d.transformBy(new Transform2d(0,-1.0,new Rotation2d(0)));
+            System.out.println("transformed Tag Pose: " + tagPose2d);
+            return tagPose2d;
+        }
+        return null;
     }
 }

@@ -125,6 +125,7 @@ public class TunerConstants {
     // Shooter
     public static final int kShooterFeedMotorId = 21;
     public static final int kShooterFlywheelMotorId = 20;
+    public static final int kBenderMotorId = 22;
 
     private static final SwerveModuleConstants FrontLeft = ConstantCreator.createModuleConstants(
             kFrontLeftSteerMotorId, kFrontLeftDriveMotorId, kFrontLeftEncoderId, kFrontLeftEncoderOffset, Units.inchesToMeters(kFrontLeftXPosInches), Units.inchesToMeters(kFrontLeftYPosInches), kInvertLeftSide);

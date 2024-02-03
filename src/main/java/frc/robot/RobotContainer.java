@@ -5,14 +5,23 @@
 package frc.robot;
 
 import com.ctre.phoenix6.mechanisms.swerve.SwerveRequest;
+
+import java.util.List;
+
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModule.DriveRequestType;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
+import com.pathplanner.lib.path.GoalEndState;
+import com.pathplanner.lib.path.PathConstraints;
+import com.pathplanner.lib.path.PathPlannerPath;
 
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
@@ -70,12 +79,35 @@ public class RobotContainer {
     // reset the field-centric heading on left bumper press
     joystick.leftBumper().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldRelative()));
 
-    // joystick.rightBumper().onTrue(new InstantCommand(() -> orchestra.play()));
     joystick.y().onTrue(shootCommand);
 
     joystick.x().onTrue(new InstantCommand(() -> shooter.loadNote()));
     joystick.x().onFalse(new InstantCommand(() -> shooter.stopMotors()));
   
+    joystick.rightBumper().onTrue(new InstantCommand(() -> {
+      var ampPose = aprilTagSubsystem.getAmpPose();
+      var currentPose = drivetrain.getCurrentPose();
+      System.out.println("ampPose: " + ampPose + ", currentPose: " + currentPose);
+      List<Translation2d> bezierPoints = PathPlannerPath.bezierFromPoses(
+        currentPose,
+        ampPose);
+
+      System.out.println("*****************************");
+      for (Translation2d translation2d : bezierPoints) {
+        System.out.println("point: " + translation2d);
+      }
+      System.out.println("*****************************");
+
+      // Create the path using the bezier points created above
+      PathPlannerPath path = new PathPlannerPath(
+        bezierPoints,
+        new PathConstraints(0.5, 0.5, 2 * Math.PI, 4 * Math.PI), // The constraints for this path. If using a differential drivetrain, the angular constraints have no effect.
+        new GoalEndState(0.0, Rotation2d.fromDegrees(-90))); // Goal end state. You can set a holonomic rotation here. If using a differential drivetrain, the rotation will have no effect.
+      
+      // Prevent the path from being flipped if the coordinates are already correct
+      path.preventFlipping = true;
+      // CommandScheduler.getInstance().schedule(drivetrain.getFollowPathCommand(path, true));
+    }));
     // if (Utils.isSimulation()) {
     //   drivetrain.seedFieldRelative(new Pose2d(new Translation2d(), Rotation2d.fromDegrees(90)));
     // }

@@ -8,10 +8,15 @@ import com.ctre.phoenix6.mechanisms.swerve.SwerveDrivetrainConstants;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModuleConstants;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.commands.FollowPathHolonomic;
+import com.pathplanner.lib.commands.PathPlannerAuto;
+import com.pathplanner.lib.path.PathPlannerPath;
+import com.pathplanner.lib.path.PathPlannerTrajectory;
 import com.pathplanner.lib.util.HolonomicPathFollowerConfig;
 import com.pathplanner.lib.util.PIDConstants;
 import com.pathplanner.lib.util.ReplanningConfig;
 
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -46,18 +51,25 @@ public class DrivebaseSubsystem extends SwerveDrivetrain implements Subsystem {
 
     }
 
+    public Pose2d getCurrentPose() {
+        return this.getState().Pose;
+    }
+
+    private HolonomicPathFollowerConfig pathFollowerConfig = new HolonomicPathFollowerConfig(
+        new PIDConstants(10, 0, 0),
+        new PIDConstants(10, 0, 0),
+        MODULE_MAX_SPEED,
+        DRIVEBASE_RADIUS_METERS,
+        new ReplanningConfig(true, true),
+        0.004);
+
     private void configurePathPlanner() {
         AutoBuilder.configureHolonomic(
             ()->this.getState().Pose, // Supplier of current robot pose
             this::seedFieldRelative,  // Consumer for seeding pose against auto
             this::getCurrentRobotChassisSpeeds,
             (speeds)->this.setControl(autoRequest.withSpeeds(speeds)), // Consumer of ChassisSpeeds to drive the robot
-            new HolonomicPathFollowerConfig(new PIDConstants(10, 0, 0),
-                                            new PIDConstants(10, 0, 0),
-                                            MODULE_MAX_SPEED,
-                                            DRIVEBASE_RADIUS_METERS,
-                                            new ReplanningConfig(true, true),
-                                            0.004),
+            pathFollowerConfig,
             this::getShouldFlipPath,
             this); // Subsystem for requirements
     }
@@ -76,5 +88,30 @@ public class DrivebaseSubsystem extends SwerveDrivetrain implements Subsystem {
 
     public ChassisSpeeds getCurrentRobotChassisSpeeds() {
         return m_kinematics.toChassisSpeeds(getState().ModuleStates);
+    }
+
+    public void setCurrentRobotChassisSpeeds(ChassisSpeeds speeds) {
+        setControl(new SwerveRequest.ApplyChassisSpeeds().withSpeeds(speeds));
+    }
+
+    public Command getFollowPathCommand(PathPlannerPath path, boolean autoFlip) {
+        return new FollowPathHolonomic(
+                path,
+                ()->this.getState().Pose, // Robot pose supplier
+                this::getCurrentRobotChassisSpeeds, // ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
+                this::setCurrentRobotChassisSpeeds, // Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds
+                pathFollowerConfig,
+                () -> {
+                    if (autoFlip == false) {
+                        return false;
+                    }
+                    var alliance = DriverStation.getAlliance();
+                    if (alliance.isPresent()) {
+                        return alliance.get() == DriverStation.Alliance.Red;
+                    }
+                    return false;
+                },
+                this // Reference to this subsystem to set requirements
+        );
     }
 }
