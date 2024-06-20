@@ -29,7 +29,7 @@ import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.generated.TunerConstants;
-import frc.robot.subsystems.AprilTagSubsystem;
+//import frc.robot.subsystems.AprilTagSubsystem;
 import frc.robot.subsystems.DrivebaseSubsystem;
 import frc.robot.subsystems.ShooterSubsystem;
 
@@ -41,7 +41,7 @@ public class RobotContainer {
   private final CommandXboxController joystick = new CommandXboxController(0); // My joystick
   public final DrivebaseSubsystem drivetrain = TunerConstants.DriveTrain; // My drivetrain
   public final ShooterSubsystem shooter = new ShooterSubsystem();
-  public final AprilTagSubsystem aprilTagSubsystem = new AprilTagSubsystem(drivetrain);
+  //public final AprilTagSubsystem aprilTagSubsystem = new AprilTagSubsystem(drivetrain);
   private final SwerveRequest.FieldCentric drive = new SwerveRequest.FieldCentric()
       .withDeadband(MaxSpeed * 0.1).withRotationalDeadband(MaxAngularRate * 0.1) // Add a 10% deadband
       .withDriveRequestType(DriveRequestType.OpenLoopVoltage); // I want field-centric
@@ -97,30 +97,30 @@ public class RobotContainer {
     joystick.x().onTrue(new InstantCommand(() -> shooter.loadNote()));
     joystick.x().onFalse(new InstantCommand(() -> shooter.stopMotors()));
   
-    joystick.rightBumper().onTrue(new InstantCommand(() -> {
-      var ampPose = aprilTagSubsystem.getAmpPose();
-      var currentPose = drivetrain.getCurrentPose();
-      System.out.println("ampPose: " + ampPose + ", currentPose: " + currentPose);
-      List<Translation2d> bezierPoints = PathPlannerPath.bezierFromPoses(
-        currentPose,
-        ampPose);
+    // joystick.rightBumper().onTrue(new InstantCommand(() -> {
+    //   var ampPose = aprilTagSubsystem.getAmpPose();
+    //   var currentPose = drivetrain.getCurrentPose();
+    //   System.out.println("ampPose: " + ampPose + ", currentPose: " + currentPose);
+    //   List<Translation2d> bezierPoints = PathPlannerPath.bezierFromPoses(
+    //     currentPose,
+    //     ampPose);
 
-      System.out.println("*****************************");
-      for (Translation2d translation2d : bezierPoints) {
-        System.out.println("point: " + translation2d);
-      }
-      System.out.println("*****************************");
+    //   System.out.println("*****************************");
+    //   for (Translation2d translation2d : bezierPoints) {
+    //     System.out.println("point: " + translation2d);
+    //   }
+    //   System.out.println("*****************************");
 
-      // Create the path using the bezier points created above
-      PathPlannerPath path = new PathPlannerPath(
-        bezierPoints,
-        new PathConstraints(0.5, 0.5, 2 * Math.PI, 4 * Math.PI), // The constraints for this path. If using a differential drivetrain, the angular constraints have no effect.
-        new GoalEndState(0.0, Rotation2d.fromDegrees(-90))); // Goal end state. You can set a holonomic rotation here. If using a differential drivetrain, the rotation will have no effect.
+    //   // Create the path using the bezier points created above
+    //   PathPlannerPath path = new PathPlannerPath(
+    //     bezierPoints,
+    //     new PathConstraints(0.5, 0.5, 2 * Math.PI, 4 * Math.PI), // The constraints for this path. If using a differential drivetrain, the angular constraints have no effect.
+    //     new GoalEndState(0.0, Rotation2d.fromDegrees(-90))); // Goal end state. You can set a holonomic rotation here. If using a differential drivetrain, the rotation will have no effect.
       
-      // Prevent the path from being flipped if the coordinates are already correct
-      path.preventFlipping = true;
-      CommandScheduler.getInstance().schedule(drivetrain.getFollowPathCommand(path, true));
-    }));
+    //   // Prevent the path from being flipped if the coordinates are already correct
+    //   path.preventFlipping = true;
+    //   CommandScheduler.getInstance().schedule(drivetrain.getFollowPathCommand(path, true));
+    // }));
     // if (Utils.isSimulation()) {
     //   drivetrain.seedFieldRelative(new Pose2d(new Translation2d(), Rotation2d.fromDegrees(90)));
     // }
