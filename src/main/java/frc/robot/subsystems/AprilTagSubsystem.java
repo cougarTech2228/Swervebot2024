@@ -39,7 +39,7 @@ import frc.robot.Robot;
 public class AprilTagSubsystem extends SubsystemBase {
     private PhotonCamera camera;
     private PhotonPipelineResult result;
-    DrivebaseSubsystem drivebaseSubsystem;
+    // DrivebaseSubsystem drivebaseSubsystem;
     AprilTagFieldLayout aprilTagFieldLayout;
 
     private static final double reprojectionErrorThresholdLow = 1.8;
@@ -58,10 +58,10 @@ public class AprilTagSubsystem extends SubsystemBase {
 
     ArrayList <String> cameraNames = new ArrayList<>(
         Arrays.asList(
-        "frontLeftCamera",
-        "frontRightCamera",
-        "backRightCamera",
-        "backLeftCamera"
+        "AprilTagCamera1",
+        "AprilTagCamera2",
+        "AprilTagCamera3",
+        "AprilTagCamera4"
     ));
 
     ArrayList <PhotonCamera> cameras = new ArrayList<>(
@@ -112,7 +112,22 @@ public class AprilTagSubsystem extends SubsystemBase {
         ));
         
         
-        ArrayList <PhotonPoseEstimator> poseEstimators = new ArrayList<>(
+        ArrayList <PhotonPoseEstimator> poseEstimators;
+
+    Transform2d AMP_TO_CAMERA_TRANSFORM = new Transform2d(0.64,-0.127,new Rotation2d(0));
+
+
+    public AprilTagSubsystem(DrivebaseSubsystem drivebaseSubsystem){
+        // this.drivebaseSubsystem = drivebaseSubsystem;
+         
+        try {
+            aprilTagFieldLayout = AprilTagFieldLayout.loadFromResource(AprilTagFields.k2024Crescendo.m_resourceFile);
+            System.out.println("loaded april tag layout");
+        } catch (IOException e) {
+            System.out.println("Failed to load april tag layout");
+        }
+
+        poseEstimators = new ArrayList<>(
             Arrays.asList(
             new PhotonPoseEstimator(
                 aprilTagFieldLayout, PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR, 
@@ -128,18 +143,6 @@ public class AprilTagSubsystem extends SubsystemBase {
                 cameras.get(BACK_LEFT), cameraTransforms.get(BACK_LEFT))
             ));
 
-
-    Transform2d AMP_TO_CAMERA_TRANSFORM = new Transform2d(0.64,-0.127,new Rotation2d(0));
-
-
-    public AprilTagSubsystem(DrivebaseSubsystem drivebaseSubsystem){
-        this.drivebaseSubsystem = drivebaseSubsystem;
-         
-        try {
-            aprilTagFieldLayout = AprilTagFieldLayout.loadFromResource(AprilTagFields.k2024Crescendo.m_resourceFile);
-        } catch (IOException e) {
-            System.out.println("Failed to load april tag layout");
-        }
     }
 
     public boolean seesAprilTag(){
@@ -226,14 +229,14 @@ public class AprilTagSubsystem extends SubsystemBase {
             // var estStdDevs = getEstimationStdDevs(est2dPose, poseEstimators.get(index), camera);
 
             // drivebaseSubsystem.addVisionMeasurement(est2dPose, estimatedPose.timestampSeconds, estStdDevs);
-            if (
-                pose3d.getX() >= -SwerveConstants.VISION_FIELD_MARGIN &&
-                pose3d.getX() <= Constants.FIELD_LENGTH + SwerveConstants.VISION_FIELD_MARGIN &&
-                pose3d.getY() >= -SwerveConstants.VISION_FIELD_MARGIN &&
-                pose3d.getY() <= Constants.FIELD_WIDTH + SwerveConstants.VISION_FIELD_MARGIN &&
-                pose3d.getZ() >= -SwerveConstants.VISION_Z_MARGIN &&
-                pose3d.getZ() <= SwerveConstants.VISION_Z_MARGIN
-            ) {
+            // if (
+            //     pose3d.getX() >= -SwerveConstants.VISION_FIELD_MARGIN &&
+            //     pose3d.getX() <= Constants.FIELD_LENGTH + SwerveConstants.VISION_FIELD_MARGIN &&
+            //     pose3d.getY() >= -SwerveConstants.VISION_FIELD_MARGIN &&
+            //     pose3d.getY() <= Constants.FIELD_WIDTH + SwerveConstants.VISION_FIELD_MARGIN &&
+            //     pose3d.getZ() >= -SwerveConstants.VISION_Z_MARGIN &&
+            //     pose3d.getZ() <= SwerveConstants.VISION_Z_MARGIN
+            // ) {
                 double sum = 0.0;
                 for (PhotonTrackedTarget target : estimatedPose.targetsUsed) {
                     Optional<Pose3d> tagPose =
@@ -245,13 +248,13 @@ public class AprilTagSubsystem extends SubsystemBase {
 
                 int tagCount = estimatedPose.targetsUsed.size();
                 double stdScale = Math.pow(sum / tagCount, 2.0) / tagCount;
-                double xyStd = SwerveConstants.VISION_STD_XY_SCALE * stdScale;
-                double rotStd = SwerveConstants.VISION_STD_ROT_SCALE * stdScale;
+                double xyStd = /*SwerveConstants.VISION_STD_XY_SCALE * */ stdScale;
+                double rotStd = /*SwerveConstants.VISION_STD_ROT_SCALE * */ stdScale;
 
-                drivebaseSubsystem.addVisionMeasurement(est2dPose, estimatedPose.timestampSeconds, VecBuilder.fill(xyStd, xyStd, rotStd));
+                // drivebaseSubsystem.addVisionMeasurement(est2dPose, estimatedPose.timestampSeconds, VecBuilder.fill(xyStd, xyStd, rotStd));
                 measurements.add(est2dPose);
                 continue;
-            }
+            // }
         }
     }
 
