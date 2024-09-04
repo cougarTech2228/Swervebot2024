@@ -20,13 +20,13 @@ public class Robot extends LoggedRobot {
   @Override
   public void robotInit() {
 
-    // Logger.addDataReceiver(new WPILOGWriter());
+    Logger.addDataReceiver(new WPILOGWriter());
     Logger.addDataReceiver(new NT4Publisher());
     // Start AdvantageKit logger
     Logger.start();
     m_robotContainer = new RobotContainer();
 
-    // m_robotContainer.drivetrain.getDaqThread().setThreadPriority(99);
+    m_robotContainer.drivetrain.getDaqThread().setThreadPriority(99);
   }
   @Override
   public void robotPeriodic() {

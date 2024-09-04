@@ -39,7 +39,7 @@ import frc.robot.Robot;
 public class AprilTagSubsystem extends SubsystemBase {
     private PhotonCamera camera;
     private PhotonPipelineResult result;
-    // DrivebaseSubsystem drivebaseSubsystem;
+    DrivebaseSubsystem drivebaseSubsystem;
     AprilTagFieldLayout aprilTagFieldLayout;
 
     private static final double reprojectionErrorThresholdLow = 1.8;
@@ -118,7 +118,7 @@ public class AprilTagSubsystem extends SubsystemBase {
 
 
     public AprilTagSubsystem(DrivebaseSubsystem drivebaseSubsystem){
-        // this.drivebaseSubsystem = drivebaseSubsystem;
+        this.drivebaseSubsystem = drivebaseSubsystem;
          
         try {
             aprilTagFieldLayout = AprilTagFieldLayout.loadFromResource(AprilTagFields.k2024Crescendo.m_resourceFile);
@@ -226,9 +226,9 @@ public class AprilTagSubsystem extends SubsystemBase {
             Logger.recordOutput("Vision/" + camera.getName() + "/Strategy", estimatedPose.strategy);
 
             // Change our trust in the measurement based on the tags we can see
-            // var estStdDevs = getEstimationStdDevs(est2dPose, poseEstimators.get(index), camera);
+            var estStdDevs = getEstimationStdDevs(est2dPose, poseEstimators.get(index), camera);
 
-            // drivebaseSubsystem.addVisionMeasurement(est2dPose, estimatedPose.timestampSeconds, estStdDevs);
+            drivebaseSubsystem.addVisionMeasurement(est2dPose, estimatedPose.timestampSeconds, estStdDevs);
             // if (
             //     pose3d.getX() >= -SwerveConstants.VISION_FIELD_MARGIN &&
             //     pose3d.getX() <= Constants.FIELD_LENGTH + SwerveConstants.VISION_FIELD_MARGIN &&
@@ -251,8 +251,13 @@ public class AprilTagSubsystem extends SubsystemBase {
                 double xyStd = /*SwerveConstants.VISION_STD_XY_SCALE * */ stdScale;
                 double rotStd = /*SwerveConstants.VISION_STD_ROT_SCALE * */ stdScale;
 
+                // Logger.recordOutput("Vision/stdDev", new double[] {
+                //     xyStd,
+                //     xyStd,
+                //     rotStd
+                // });
                 // drivebaseSubsystem.addVisionMeasurement(est2dPose, estimatedPose.timestampSeconds, VecBuilder.fill(xyStd, xyStd, rotStd));
-                measurements.add(est2dPose);
+                // measurements.add(est2dPose);
                 continue;
             // }
         }
