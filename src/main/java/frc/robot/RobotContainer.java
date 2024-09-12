@@ -9,7 +9,10 @@ import com.ctre.phoenix6.mechanisms.swerve.SwerveRequest;
 
 import java.util.List;
 
+import org.littletonrobotics.junction.Logger;
+
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModule.DriveRequestType;
+import com.ctre.phoenix6.mechanisms.swerve.utility.PhoenixPIDController;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 import com.pathplanner.lib.path.GoalEndState;
@@ -42,13 +45,19 @@ public class RobotContainer {
   private final CommandXboxController joystick = new CommandXboxController(0); // My joystick
  
   public final DrivebaseSubsystem drivetrain = TunerConstants.DriveTrain; // My drivetrain
-  public final AprilTagSubsystem vision = new AprilTagSubsystem(drivetrain);
   public final ShooterSubsystem shooter = new ShooterSubsystem();
   public final AprilTagSubsystem aprilTagSubsystem = new AprilTagSubsystem(drivetrain);
   private final SwerveRequest.FieldCentric drive = new SwerveRequest.FieldCentric()
       .withDeadband(MaxSpeed * 0.1).withRotationalDeadband(MaxAngularRate * 0.1) // Add a 10% deadband
       .withDriveRequestType(DriveRequestType.OpenLoopVoltage); // I want field-centric
                                                                // driving in open loop
+
+  private final SwerveRequest.FieldCentricFacingAngle driveAngle = new SwerveRequest.FieldCentricFacingAngle()
+  .withDeadband(MaxSpeed * 0.1).withRotationalDeadband(MaxAngularRate * 0.1) // Add a 10% deadband
+      .withDriveRequestType(DriveRequestType.OpenLoopVoltage); // I want field-centric
+                                                               // driving in open loop
+           
+
   private final SwerveRequest.SwerveDriveBrake brake = new SwerveRequest.SwerveDriveBrake();
   private final SwerveRequest.RobotCentric forwardStraight = new SwerveRequest.RobotCentric().withDriveRequestType(DriveRequestType.OpenLoopVoltage);
   private final SwerveRequest.PointWheelsAt point = new SwerveRequest.PointWheelsAt();
@@ -77,14 +86,39 @@ public class RobotContainer {
     return -1;
   }
 
+  private PhoenixPIDController m_thetaController;
+    
   private void configureBindings() {
     drivetrain.setDefaultCommand( // Drivetrain will execute this command periodically
-        drivetrain.applyRequest(() -> drive.withVelocityX(invertForColor() * joystick.getLeftY() * MaxSpeed) // Drive forward with
-                                                                                           // negative Y (forward)
-            .withVelocityY(invertForColor() * joystick.getLeftX() * MaxSpeed) // Drive left with negative X (left)
-            .withRotationalRate(-joystick.getRightX() * MaxAngularRate) // Drive counterclockwise with negative X (left)
-        ).ignoringDisable(true));
+        // drivetrain.applyRequest(() -> drive.withVelocityX(invertForColor() * joystick.getLeftY() * MaxSpeed) // Drive forward with
+        //                                                                                    // negative Y (forward)
+        //     .withVelocityY(invertForColor() * joystick.getLeftX() * MaxSpeed) // Drive left with negative X (left)
+        //     .withRotationalRate(-joystick.getRightX() * MaxAngularRate) // Drive counterclockwise with negative X (left)
+        // ).ignoringDisable(true)
 
+        
+        drivetrain.applyRequest(() -> {
+          Pose2d target = aprilTagSubsystem.getTargetPosition2d(7);
+          Pose2d currentPose = drivetrain.getCurrentPose();
+          
+          Translation2d errorToTarget = currentPose.getTranslation().minus(target.getTranslation());
+          Logger.recordOutput("ErrorToTarget/", errorToTarget);
+          Logger.recordOutput("TargetPosition/", target);
+          return driveAngle
+            .withVelocityX(invertForColor() * joystick.getLeftY() * MaxSpeed) // Drive forward with
+                                                                              // negative Y (forward)
+            .withVelocityY(invertForColor() * joystick.getLeftX() * MaxSpeed) // Drive left with negative X (left)
+            .withTargetDirection(errorToTarget.getAngle()); // Drive counterclockwise with negative X (left)
+        }
+
+        ).ignoringDisable(true)
+        // drivetrain.applyRequest(() -> {
+        //   new SwerveRequest.FieldCentricFacingAngle()
+        //     .withTargetDirection(null)
+        // })
+      );
+
+      
     joystick.a().whileTrue(drivetrain.applyRequest(() -> brake));
     joystick.b().whileTrue(drivetrain
         .applyRequest(() -> point.withModuleDirection(new Rotation2d(-joystick.getLeftY(), -joystick.getLeftX()))));
@@ -100,30 +134,30 @@ public class RobotContainer {
     joystick.x().onTrue(new InstantCommand(() -> shooter.loadNote()));
     joystick.x().onFalse(new InstantCommand(() -> shooter.stopMotors()));
   
-    joystick.rightBumper().onTrue(new InstantCommand(() -> {
-      var ampPose = aprilTagSubsystem.getAmpPose();
-      var currentPose = drivetrain.getCurrentPose();
-      System.out.println("ampPose: " + ampPose + ", currentPose: " + currentPose);
-      List<Translation2d> bezierPoints = PathPlannerPath.bezierFromPoses(
-        currentPose,
-        ampPose);
+    // joystick.rightBumper().onTrue(new InstantCommand(() -> {
+    //   var ampPose = aprilTagSubsystem.getAmpPose();
+    //   var currentPose = drivetrain.getCurrentPose();
+    //   System.out.println("ampPose: " + ampPose + ", currentPose: " + currentPose);
+    //   List<Translation2d> bezierPoints = PathPlannerPath.bezierFromPoses(
+    //     currentPose,
+    //     ampPose);
 
-      System.out.println("*****************************");
-      for (Translation2d translation2d : bezierPoints) {
-        System.out.println("point: " + translation2d);
-      }
-      System.out.println("*****************************");
+    //   System.out.println("*****************************");
+    //   for (Translation2d translation2d : bezierPoints) {
+    //     System.out.println("point: " + translation2d);
+    //   }
+    //   System.out.println("*****************************");
 
-      // Create the path using the bezier points created above
-      PathPlannerPath path = new PathPlannerPath(
-        bezierPoints,
-        new PathConstraints(0.5, 0.5, 2 * Math.PI, 4 * Math.PI), // The constraints for this path. If using a differential drivetrain, the angular constraints have no effect.
-        new GoalEndState(0.0, Rotation2d.fromDegrees(-90))); // Goal end state. You can set a holonomic rotation here. If using a differential drivetrain, the rotation will have no effect.
+    //   // Create the path using the bezier points created above
+    //   PathPlannerPath path = new PathPlannerPath(
+    //     bezierPoints,
+    //     new PathConstraints(0.5, 0.5, 2 * Math.PI, 4 * Math.PI), // The constraints for this path. If using a differential drivetrain, the angular constraints have no effect.
+    //     new GoalEndState(0.0, Rotation2d.fromDegrees(-90))); // Goal end state. You can set a holonomic rotation here. If using a differential drivetrain, the rotation will have no effect.
       
-      // Prevent the path from being flipped if the coordinates are already correct
-      path.preventFlipping = true;
-      CommandScheduler.getInstance().schedule(drivetrain.getFollowPathCommand(path, true));
-    }));
+    //   // Prevent the path from being flipped if the coordinates are already correct
+    //   path.preventFlipping = true;
+    //   CommandScheduler.getInstance().schedule(drivetrain.getFollowPathCommand(path, true));
+    // }));
     if (Utils.isSimulation()) {
       drivetrain.seedFieldRelative(new Pose2d(new Translation2d(), Rotation2d.fromDegrees(90)));
     }
@@ -134,6 +168,11 @@ public class RobotContainer {
   }
 
   public RobotContainer() {
+
+    m_thetaController = new PhoenixPIDController(15.0, 0.0, 0.0);
+    m_thetaController.enableContinuousInput(-Math.PI, Math.PI);
+    driveAngle.HeadingController = m_thetaController;
+
     NamedCommands.registerCommand("shootSpeaker", shootCommand);
     NamedCommands.registerCommand("loadNote", loadNote);
     configureBindings();

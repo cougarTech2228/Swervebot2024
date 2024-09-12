@@ -158,6 +158,11 @@ public class AprilTagSubsystem extends SubsystemBase {
         return (estimatedPose.best.getX() < 4.0) || (estimatedPose.best.getX() > 12);
     }
 
+    public Pose2d getTargetPosition2d(int id) {
+        Optional<Pose3d> tagPose = aprilTagFieldLayout.getTagPose(id);
+        return tagPose.get().toPose2d();
+    }
+
     @Override
     public void periodic() {
         int index = -1;
